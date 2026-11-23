@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_name">HARVERA</string>
+    <string name="tagline_subtitle">Fresh groceries &amp; everyday shopping delivered to your door</string>
+    <string name="sign_in_google">Sign in with Google</string>
+    <string name="sign_out">Sign out</string>
+    <string name="nav_shop">Shop</string>
+    <string name="nav_cart">Cart</string>
+    <string name="nav_orders">Orders</string>
+    <string name="nav_locations">Locations</string>
+    <string name="search_hint">Search groceries, gear, or store location...</string>
+    <string name="add_product">Add Product</string>
+    <string name="use_current_location">Use GPS Location</string>
+    <string name="add_address">Add Delivery Address</string>
+    <string name="place_order">Place Order</string>
+    <string name="empty_cart_title">Your market tote is empty</string>
+    <string name="empty_cart_subtitle">Explore fresh produce, pantry staples, and curated everyday essentials with transparent pricing and store locations.</string>
+    <string name="empty_orders_title">No orders placed yet</string>
+    <string name="empty_orders_subtitle">Once you check out your groceries or shopping finds, live fulfillment and delivery tracking will appear here.</string>
+    <string name="browse_market">Browse Market</string>
+</resources>

@@ -1,0 +1,122 @@
+{
+  "entities": {
+    "CartItem": {
+      "title": "CartItem",
+      "description": "An item in a user's active grocery or shopping cart with its price and store location.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner Firebase Auth UID" },
+        "productId": { "type": "string", "description": "Catalog or custom product identifier" },
+        "productName": { "type": "string", "description": "Display name of the product" },
+        "category": { "type": "string", "description": "Product category" },
+        "storeType": { "type": "string", "enum": ["GROCERY", "SHOPPING"], "description": "Storefront section" },
+        "unitPrice": { "type": "number", "description": "Unit cost of the product" },
+        "unitLabel": { "type": "string", "description": "Pricing unit label e.g. per lb, each" },
+        "productLocation": { "type": "string", "description": "Store hub, aisle, or origin location" },
+        "quantity": { "type": "integer", "description": "Quantity in cart" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp on create" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp on update" }
+      },
+      "required": ["userId", "productId", "productName", "category", "storeType", "unitPrice", "unitLabel", "productLocation", "quantity", "createdAt", "updatedAt"]
+    },
+    "FavoriteItem": {
+      "title": "FavoriteItem",
+      "description": "A user's bookmarked grocery or shopping product.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner Firebase Auth UID" },
+        "productId": { "type": "string", "description": "Catalog or custom product identifier" },
+        "productName": { "type": "string", "description": "Display name of the product" },
+        "unitPrice": { "type": "number", "description": "Unit cost of the product" },
+        "productLocation": { "type": "string", "description": "Store hub or aisle location" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp on create" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp on update" }
+      },
+      "required": ["userId", "productId", "productName", "unitPrice", "productLocation", "createdAt", "updatedAt"]
+    },
+    "DeliveryAddress": {
+      "title": "DeliveryAddress",
+      "description": "User's saved delivery location with optional GPS coordinates.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner Firebase Auth UID" },
+        "label": { "type": "string", "description": "Short label like Home or Office" },
+        "streetAddress": { "type": "string", "description": "Street and building details" },
+        "city": { "type": "string", "description": "City or neighborhood" },
+        "instructions": { "type": "string", "description": "Optional drop-off notes" },
+        "latitude": { "type": "number", "description": "Optional latitude" },
+        "longitude": { "type": "number", "description": "Optional longitude" },
+        "defaultSelected": { "type": "boolean", "description": "Whether this is the active delivery address" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp on create" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp on update" }
+      },
+      "required": ["userId", "label", "streetAddress", "city", "defaultSelected", "createdAt", "updatedAt"]
+    },
+    "CustomProduct": {
+      "title": "CustomProduct",
+      "description": "User-created grocery or shopping product with explicit location and cost.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner Firebase Auth UID" },
+        "name": { "type": "string", "description": "Product name" },
+        "description": { "type": "string", "description": "Product description" },
+        "storeType": { "type": "string", "enum": ["GROCERY", "SHOPPING"], "description": "Storefront section" },
+        "category": { "type": "string", "description": "Product category" },
+        "price": { "type": "number", "description": "Product cost" },
+        "unitLabel": { "type": "string", "description": "Pricing unit label" },
+        "locationName": { "type": "string", "description": "Store, aisle, or warehouse location" },
+        "originCity": { "type": "string", "description": "Origin city or region" },
+        "latitude": { "type": "number", "description": "Optional product store latitude" },
+        "longitude": { "type": "number", "description": "Optional product store longitude" },
+        "inStock": { "type": "boolean", "description": "Availability flag" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp on create" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp on update" }
+      },
+      "required": ["userId", "name", "storeType", "category", "price", "unitLabel", "locationName", "originCity", "inStock", "createdAt", "updatedAt"]
+    },
+    "OrderRecord": {
+      "title": "OrderRecord",
+      "description": "Placed grocery and shopping order with delivery location, fulfillment hub, and total cost breakdown.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner Firebase Auth UID" },
+        "orderNumber": { "type": "string", "description": "Human-readable order code" },
+        "status": { "type": "string", "enum": ["CONFIRMED", "PACKING", "OUT_FOR_DELIVERY", "DELIVERED", "CANCELLED"], "description": "Order fulfillment status" },
+        "deliveryAddress": { "type": "string", "description": "Delivery street address" },
+        "deliveryCity": { "type": "string", "description": "Delivery city" },
+        "fulfillmentHub": { "type": "string", "description": "Primary store fulfillment hub location" },
+        "itemCount": { "type": "integer", "description": "Total units ordered" },
+        "subtotal": { "type": "number", "description": "Item subtotal cost" },
+        "deliveryFee": { "type": "number", "description": "Delivery fee" },
+        "taxAmount": { "type": "number", "description": "Estimated tax" },
+        "totalCost": { "type": "number", "description": "Final total cost" },
+        "itemsSummary": { "type": "string", "description": "Bounded summary list of ordered lines (stored as array of strings)" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp on create" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp on update" }
+      },
+      "required": ["userId", "orderNumber", "status", "deliveryAddress", "deliveryCity", "fulfillmentHub", "itemCount", "subtotal", "deliveryFee", "taxAmount", "totalCost", "itemsSummary", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/cart/{cartItemId}": {
+      "schema": { "$ref": "#/entities/CartItem" },
+      "description": "User-scoped shopping and grocery cart items"
+    },
+    "/users/{userId}/favorites/{productId}": {
+      "schema": { "$ref": "#/entities/FavoriteItem" },
+      "description": "User-scoped saved favorite products"
+    },
+    "/users/{userId}/addresses/{addressId}": {
+      "schema": { "$ref": "#/entities/DeliveryAddress" },
+      "description": "User-scoped delivery locations"
+    },
+    "/users/{userId}/custom_products/{productId}": {
+      "schema": { "$ref": "#/entities/CustomProduct" },
+      "description": "User-scoped custom products with custom location and cost"
+    },
+    "/users/{userId}/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/OrderRecord" },
+      "description": "User-scoped placed orders and tracking"
+    }
+  }
+}

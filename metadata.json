@@ -1,0 +1,6 @@
+{
+  "name": "HARVERA",
+  "description": "Online groceries and everyday shopping marketplace with fresh produce, home essentials, cart management, saved addresses, and order tracking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

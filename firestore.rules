@@ -1,0 +1,199 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global safety net: default-deny all unspecified paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidStoreType(val) {
+      return val is string && (val == 'GROCERY' || val == 'SHOPPING');
+    }
+
+    function isValidOrderStatus(val) {
+      return val is string && val in ['CONFIRMED', 'PACKING', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED'];
+    }
+
+    function isValidCartItem(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.productId is string && data.productId.size() >= 1 && data.productId.size() <= 128 &&
+             data.productName is string && data.productName.size() >= 1 && data.productName.size() <= 120 &&
+             data.category is string && data.category.size() >= 1 && data.category.size() <= 50 &&
+             isValidStoreType(data.storeType) &&
+             data.unitPrice is number && data.unitPrice > 0 && data.unitPrice <= 100000 &&
+             data.unitLabel is string && data.unitLabel.size() >= 1 && data.unitLabel.size() <= 40 &&
+             data.productLocation is string && data.productLocation.size() >= 1 && data.productLocation.size() <= 120 &&
+             data.quantity is int && data.quantity >= 1 && data.quantity <= 99;
+    }
+
+    function isValidFavoriteItem(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.productId is string && data.productId.size() >= 1 && data.productId.size() <= 128 &&
+             data.productName is string && data.productName.size() >= 1 && data.productName.size() <= 120 &&
+             data.unitPrice is number && data.unitPrice > 0 && data.unitPrice <= 100000 &&
+             data.productLocation is string && data.productLocation.size() >= 1 && data.productLocation.size() <= 120;
+    }
+
+    function isValidDeliveryAddress(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.label is string && data.label.size() >= 1 && data.label.size() <= 40 &&
+             data.streetAddress is string && data.streetAddress.size() >= 3 && data.streetAddress.size() <= 200 &&
+             data.city is string && data.city.size() >= 2 && data.city.size() <= 80 &&
+             (!('instructions' in data) || (data.instructions is string && data.instructions.size() <= 160)) &&
+             (!('latitude' in data) || (data.latitude is number && data.latitude >= -90 && data.latitude <= 90)) &&
+             (!('longitude' in data) || (data.longitude is number && data.longitude >= -180 && data.longitude <= 180)) &&
+             data.defaultSelected is bool;
+    }
+
+    function isValidCustomProduct(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.name is string && data.name.size() >= 2 && data.name.size() <= 100 &&
+             (!('description' in data) || (data.description is string && data.description.size() <= 300)) &&
+             isValidStoreType(data.storeType) &&
+             data.category is string && data.category.size() >= 1 && data.category.size() <= 50 &&
+             data.price is number && data.price > 0 && data.price <= 100000 &&
+             data.unitLabel is string && data.unitLabel.size() >= 1 && data.unitLabel.size() <= 40 &&
+             data.locationName is string && data.locationName.size() >= 2 && data.locationName.size() <= 120 &&
+             data.originCity is string && data.originCity.size() >= 2 && data.originCity.size() <= 80 &&
+             (!('latitude' in data) || (data.latitude is number && data.latitude >= -90 && data.latitude <= 90)) &&
+             (!('longitude' in data) || (data.longitude is number && data.longitude >= -180 && data.longitude <= 180)) &&
+             data.inStock is bool;
+    }
+
+    function isValidOrderRecord(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.orderNumber is string && data.orderNumber.size() >= 4 && data.orderNumber.size() <= 30 &&
+             isValidOrderStatus(data.status) &&
+             data.deliveryAddress is string && data.deliveryAddress.size() >= 3 && data.deliveryAddress.size() <= 240 &&
+             data.deliveryCity is string && data.deliveryCity.size() >= 2 && data.deliveryCity.size() <= 80 &&
+             data.fulfillmentHub is string && data.fulfillmentHub.size() >= 2 && data.fulfillmentHub.size() <= 120 &&
+             data.itemCount is int && data.itemCount >= 1 && data.itemCount <= 500 &&
+             data.subtotal is number && data.subtotal >= 0 && data.subtotal <= 500000 &&
+             data.deliveryFee is number && data.deliveryFee >= 0 && data.deliveryFee <= 1000 &&
+             data.taxAmount is number && data.taxAmount >= 0 && data.taxAmount <= 100000 &&
+             data.totalCost is number && data.totalCost > 0 && data.totalCost <= 600000 &&
+             data.itemsSummary is list && data.itemsSummary.size() >= 1 && data.itemsSummary.size() <= 50 &&
+             data.itemsSummary[0] is string && data.itemsSummary[0].size() <= 200;
+    }
+
+    match /users/{userId} {
+      allow get, list: if false;
+      allow write: if false;
+
+      match /cart/{cartItemId} {
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId) && isValidId(cartItemId);
+        allow create: if isOwner(userId) && isValidId(cartItemId) &&
+                         incoming().keys().hasAll(['userId', 'productId', 'productName', 'category', 'storeType', 'unitPrice', 'unitLabel', 'productLocation', 'quantity', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['userId', 'productId', 'productName', 'category', 'storeType', 'unitPrice', 'unitLabel', 'productLocation', 'quantity', 'createdAt', 'updatedAt']) &&
+                         incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                         isValidCartItem(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(cartItemId) &&
+                         isValidCartItem(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().productId == existing().productId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['quantity', 'unitPrice', 'productLocation', 'updatedAt']);
+        allow delete: if isOwner(userId) && isValidId(cartItemId);
+      }
+
+      match /favorites/{productId} {
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId) && isValidId(productId);
+        allow create: if isOwner(userId) && isValidId(productId) &&
+                         incoming().keys().hasAll(['userId', 'productId', 'productName', 'unitPrice', 'productLocation', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['userId', 'productId', 'productName', 'unitPrice', 'productLocation', 'createdAt', 'updatedAt']) &&
+                         incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                         isValidFavoriteItem(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(productId) &&
+                         isValidFavoriteItem(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().productId == existing().productId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['productName', 'unitPrice', 'productLocation', 'updatedAt']);
+        allow delete: if isOwner(userId) && isValidId(productId);
+      }
+
+      match /addresses/{addressId} {
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId) && isValidId(addressId);
+        allow create: if isOwner(userId) && isValidId(addressId) &&
+                         incoming().keys().hasAll(['userId', 'label', 'streetAddress', 'city', 'defaultSelected', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['userId', 'label', 'streetAddress', 'city', 'instructions', 'latitude', 'longitude', 'defaultSelected', 'createdAt', 'updatedAt']) &&
+                         incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                         isValidDeliveryAddress(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(addressId) &&
+                         isValidDeliveryAddress(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['label', 'streetAddress', 'city', 'instructions', 'latitude', 'longitude', 'defaultSelected', 'updatedAt']);
+        allow delete: if isOwner(userId) && isValidId(addressId);
+      }
+
+      match /custom_products/{productId} {
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId) && isValidId(productId);
+        allow create: if isOwner(userId) && isValidId(productId) &&
+                         incoming().keys().hasAll(['userId', 'name', 'storeType', 'category', 'price', 'unitLabel', 'locationName', 'originCity', 'inStock', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['userId', 'name', 'description', 'storeType', 'category', 'price', 'unitLabel', 'locationName', 'originCity', 'latitude', 'longitude', 'inStock', 'createdAt', 'updatedAt']) &&
+                         incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                         isValidCustomProduct(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(productId) &&
+                         isValidCustomProduct(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['name', 'description', 'storeType', 'category', 'price', 'unitLabel', 'locationName', 'originCity', 'latitude', 'longitude', 'inStock', 'updatedAt']);
+        allow delete: if isOwner(userId) && isValidId(productId);
+      }
+
+      match /orders/{orderId} {
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId) && isValidId(orderId);
+        allow create: if isOwner(userId) && isValidId(orderId) &&
+                         incoming().keys().hasAll(['userId', 'orderNumber', 'status', 'deliveryAddress', 'deliveryCity', 'fulfillmentHub', 'itemCount', 'subtotal', 'deliveryFee', 'taxAmount', 'totalCost', 'itemsSummary', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['userId', 'orderNumber', 'status', 'deliveryAddress', 'deliveryCity', 'fulfillmentHub', 'itemCount', 'subtotal', 'deliveryFee', 'taxAmount', 'totalCost', 'itemsSummary', 'createdAt', 'updatedAt']) &&
+                         incoming().status == 'CONFIRMED' &&
+                         incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                         isValidOrderRecord(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(orderId) &&
+                         isValidOrderRecord(incoming(), userId) &&
+                         !(existing().status in ['DELIVERED', 'CANCELLED']) &&
+                         incoming().userId == existing().userId &&
+                         incoming().orderNumber == existing().orderNumber &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']);
+        allow delete: if false;
+      }
+    }
+  }
+}
